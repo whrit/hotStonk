@@ -1,0 +1,3 @@
+-New data from yfinance
+-Implement code to pull data using yfinance api 
+-Push to GitHub and make flask prettier/easier to use...
