@@ -23,8 +23,8 @@
 
 ## 1a. Installation
 ```
-git clone https://github.com/Qerim-iseni09/Stock-Predictor-V4.git
-cd Stock-Predictor-V4
+git clone https://github.com/whrit/hotStonk.git
+cd hotStonk
 python SPV4.py --install
 ```
 
