@@ -746,38 +746,19 @@ def fine_tune_model():
                     model.save("model.keras")
                     break
 
-server_started = False
-
 import logging
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template
 from livereload import Server
 from datetime import datetime
 import os
-import threading
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
-import asyncio
-import json
-from collections import defaultdict
-import requests
-
-log = logging.getLogger(__name__)
-
 # Set up logging
 logging.basicConfig(level=logging.INFO)
-
-api_key = 'MFFRREQ5TldqcFlsREd6RmFZcEtpU1Rnb1FVUnMyLW8wTC02cnp4eldXaz0'
-
-def get_option_chain_live(symbol):
-    url = 'https://api.marketdata.app/v1/options/chain/' 
-    headers = {'Authorization': api_key}
-    path = f'{symbol}/?dateformat=timestamp'
-    final_url = url + path
-    chain_expr = requests.get(final_url, headers=headers)
-    return json.loads(chain_expr.text)  # Parse the returned data as JSON
+server_started = False
 
 # Advanced Trading Strategy Functions
 def calculate_moving_averages(prices, short_window=5, long_window=20):
@@ -809,16 +790,9 @@ def calculate_rsi(prices, window=14):
         rsi[i] = 100. - 100./(1. + rs)
 
     return rsi
-
-def advanced_trading_strategy(prices, option_data):
-    if not prices:  # Check if the prices list is empty
-        return "Data Unavailable"
+def advanced_trading_strategy(prices):
     short_mavg, long_mavg = calculate_moving_averages(prices)
     rsi = calculate_rsi(prices)
-    
-    # Placeholder for option's strike price and predicted stock price
-    option_strike_price = option_data.get("strike_price", 0)
-    predicted_stock_price = prices[-1]  # Assuming the last price is the predicted one
 
     # Check for moving average crossover
     if short_mavg[-1] > long_mavg[-1] and short_mavg[-2] <= long_mavg[-2]:
@@ -836,97 +810,30 @@ def advanced_trading_strategy(prices, option_data):
     else:
         rsi_signal = "neutral"
 
-    # Check option's strike price against predicted stock price
-    if predicted_stock_price > option_strike_price:
-        option_signal = "buy"
-    else:
-        option_signal = "sell"
-
     # Combine signals
-    if ma_signal == "buy" and rsi_signal == "buy" and option_signal == "buy":
+    if ma_signal == "buy" and rsi_signal == "buy":
         return "Strong Buy"
-    elif ma_signal == "sell" and rsi_signal == "sell" and option_signal == "sell":
+    elif ma_signal == "sell" and rsi_signal == "sell":
         return "Strong Sell"
-    elif ma_signal == "buy" or rsi_signal == "buy" or option_signal == "buy":
+    elif ma_signal == "buy" or rsi_signal == "buy":
         return "Buy"
-    elif ma_signal == "sell" or rsi_signal == "sell" or option_signal == "sell":
+    elif ma_signal == "sell" or rsi_signal == "sell":
         return "Sell"
     else:
         return "Hold"
 
-def options_chain_recommendation(recommendation, option_data):
-    # Placeholder for option's expiration date
-    option_expiration_date = option_data.get("expiration_date", "2023-01-01")
-    
-    # Placeholder for current date
-    current_date = datetime.now().date()
-
-    # Calculate days until expiration
-    days_until_expiration = (datetime.strptime(option_expiration_date, "%Y-%m-%d").date() - current_date).days
-
-    if recommendation in ["Strong Buy", "Buy"] and days_until_expiration < 7:
-        return "Recommended Call Contract for the upcoming week."
-    elif recommendation in ["Strong Sell", "Sell"] and days_until_expiration < 7:
-        return "Recommended Put Contract for the upcoming week."
-    else:
-        return "No strong recommendation for options this week."
-
 def predict_future_data():
     global server_started
 
+    from flask import Flask, jsonify, render_template
+    from livereload import Server
+    from datetime import datetime
+
     app = Flask(__name__)
-
-    # Placeholder for processing trades
-    def process_trades(trades):
-        # Convert the raw trades into a DataFrame
-        trades_df = pd.DataFrame(trades)
-        # Return the last 10 trades
-        return trades_df.tail(10)
-
-    def options_recommendation_based_on_bid(prices, option_data, bid_data):
-        # Assuming the last price in the prices list is the current price
-        current_price = prices[-1] if prices else 0
-        
-        # Assuming the last price in the predicted prices list is the predicted future price
-        predicted_price = prices[-2] if len(prices) > 1 else 0
-        
-        # Assuming the first bid in the bid_data list is the most recent bid
-        current_bid = bid_data[0] if bid_data else 0
-        
-        # Define a threshold for bid to be considered high or low (this can be adjusted)
-        bid_threshold_high = 1.05 * current_price
-        bid_threshold_low = 0.95 * current_price
-        
-        if predicted_price > current_price and current_bid >= bid_threshold_high:
-            return "Recommend Call Option: Bullish sentiment detected."
-        elif predicted_price < current_price and current_bid <= bid_threshold_low:
-            return "Recommend Put Option: Bearish sentiment detected."
-        else:
-            return "Recommend Hold: No clear direction detected."
 
     @app.route('/')
     def index():
-        symbol = request.args.get('ticker', 'AAPL')
-        latest_trades = get_option_chain_live(symbol)
-        
-        prices = latest_trades.get("prices", [])
-        option_data = latest_trades.get("option_data", {})
-        bid_data = latest_trades.get("bid", [])  # Accessing the bid array
-        
-        recommendation = advanced_trading_strategy(prices, option_data)
-        bid_recommendation = options_recommendation_based_on_bid(prices, option_data, bid_data)
-        
-        if recommendation == "Data Unavailable":
-            return "Data for the given ticker is unavailable. Please try another ticker."
-
-        options_recommendation = options_chain_recommendation(recommendation, option_data)
-
-        return render_template('index.html', 
-                                symbol=symbol, 
-                                trades=latest_trades,
-                                recommendation=recommendation, 
-                                options_recommendation=options_recommendation,
-                                bid_recommendation=bid_recommendation)  # Add this to your template
+        return render_template('index.html')
 
     print("Utilizing the model for predicting future data...")
 
@@ -1043,8 +950,8 @@ def predict_future_data():
     print(f"Highest predicted close:\n{max_close_row}\n")
     print(f"Lowest predicted close:\n{min_close_row}\n")
 
-    @app.route('/get_data', methods=['GET'])  # Renamed from '/predictions'
-    def get_data():  # Renamed the function for clarity
+    @app.route('/get_data')
+    def data():
         # Convert the dates in predicted_data to the desired format
         formatted_dates = []
         for date in predictions["Date"].tolist():
@@ -1054,9 +961,6 @@ def predict_future_data():
             formatted_dates.append(formatted_date)
 
         recommendation = advanced_trading_strategy(predictions["Predicted Close"].tolist())
-        options_recommendation = options_chain_recommendation(recommendation)
-        # Fetch the latest trades using the live data function
-        latest_trades = get_option_chain_live(request.args.get('ticker', 'AAPL'))
 
         return jsonify({
             'actual_data': {
@@ -1067,27 +971,25 @@ def predict_future_data():
                 'dates': formatted_dates,
                 'values': predictions["Predicted Close"].tolist()
             },
-            'recommendation': recommendation,
-            'options_recommendation': options_recommendation,
-            'latest_trades': latest_trades
+            'recommendation': recommendation
         })
 
-    if __name__ == "__main__":
-        if not server_started:
-            if os.environ.get("USE_LIVERELOAD", "False") == "True":
-                try:
-                    server = Server(app.wsgi_app)
-                    server.watch('templates/*.*')  # Watch for changes in the 'templates' directory
-                    server.watch('static/*.*')     # Watch for changes in the 'static' directory
-                    server.serve(port=5000, debug=False)
-                except Exception as e:
-                    logging.error("Error with livereload: %s", e)
-            else:
-                try:
-                    app.run(port=5000, debug=True, use_reloader=False)
-                except Exception as e:
-                    logging.error("Error starting the Flask app: %s", e)
-            server_started = True
+    if not server_started:
+        if os.environ.get("USE_LIVERELOAD", "False") == "True":
+            try:
+                from livereload import Server
+                server = Server(app.wsgi_app)
+                server.watch('templates/*.*')  # Watch for changes in the 'templates' directory
+                server.watch('static/*.*')     # Watch for changes in the 'static' directory
+                server.serve(port=5000, debug=False)
+            except Exception as e:
+                logging.error("Error with livereload: %s", e)
+        else:
+            try:
+                app.run(port=5000, debug=True, use_reloader=False)
+            except Exception as e:
+                logging.error("Error starting the Flask app: %s", e)
+        server_started = True
 
 def compare_predictions():
     print("Comparing the predictions with the actual data...")
