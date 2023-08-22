@@ -148,17 +148,10 @@
     <div class="theme-toggle">
         <button class="toggle-button" onclick="toggleTheme()">Switch to Light Theme</button>
     </div>
-
-    <!-- Options Chain Recommendations -->
-    <div class="options-chain-section" style="text-align: center; margin-top: 20px;">
-        <h3>Options Chain Recommendations:</h3>
-        <p id="options-chain-text">Fetching options chain recommendations...</p>
-    </div>
-    <div class="marketdata-trades-section" style="text-align: center; margin-top: 20px;">
-        <h3>Latest Trades from MarketData API:</h3>
-        <ul id="marketdata-trades-list">
-            <!-- Trades will be populated here -->
-        </ul>
+    <!-- Recommendation Section -->
+    <div class="recommendation-section" style="text-align: center; margin-top: 20px;">
+        <h3>Trading Recommendation:</h3>
+        <p id="recommendation-text">Fetching recommendation...</p>
     </div>
 
 <script>
@@ -332,22 +325,14 @@
             
         // Set the initial theme to Dark
         syncToTheme('Dark');
-
-        // Display options chain recommendations
-        const optionsChainText = document.getElementById('options-chain-text');
-        optionsChainText.textContent = data.options_recommendation;
-            
-        // Display MarketData API latest trades
-        const tradesList = document.getElementById('marketdata-trades-list');
-        data.latest_trades.forEach(trade => {
-            const listItem = document.createElement('li');
-            listItem.textContent = `Price: ${trade.price}, Size: ${trade.size}, Timestamp: ${new Date(trade.timestamp).toLocaleString()}`;
-            tradesList.appendChild(listItem);
-        });
+        // Display the recommendation
+        const recommendationText = document.getElementById('recommendation-text');
+        recommendationText.textContent = data.recommendation;
     })
     .catch(error => {
         console.error('There was a problem with the fetch operation:', error.message);
     });
+
     // Zoom function
     function zoom(factor) {
         const timeScale = chart.timeScale();
