@@ -115,3 +115,4 @@ python SPV4.py --compare
 
 This will compare the predicted data with the actual data. You may regret some of the decisions you made and wonder why you didn't trust the model (just kidding, don't take it too seriously!).
 # hotStonk
+# hotStonk
